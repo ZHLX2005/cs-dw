@@ -21,6 +21,7 @@ dotnet build -c Release
 dotnet run -c Release              # 常驻
 dotnet run -c Release -- --smoke   # 冒烟：出现 2.6s 自动退出
 dotnet run -c Release -- --probe   # 探针：每 250ms 打印位置，程序化验证显隐
+dotnet run -c Release -- --edge-test  # 边缘自测：程序化移光标到边缘验证唤醒
 ```
 
 首次运行在 exe 目录产出 `drawer.json` 模板。
@@ -32,11 +33,14 @@ dotnet run -c Release -- --probe   # 探针：每 250ms 打印位置，程序化
 | 鼠标贴边缘悬停 120ms | 抽屉滑出（只留 4DIP 把手在边缘） |
 | 鼠标移开 600ms | 抽屉收回 |
 | `Ctrl+Alt+D` | 全局热键，切换显隐（被占用时静默降级） |
+| **托盘左键** | 切换抽屉显隐 |
+| **托盘右键** | 菜单：显示/隐藏抽屉 · 设置… · 退出 |
+| **托盘「设置…」** | 打开设置页（边/尺寸/透明度/延迟/动画/应用列表），保存即时生效 |
+| **托盘「退出」** | 清理全部子进程后退出程序 |
 | 左键卡片 | 启动（可多实例，徽标 `●N`） |
 | 右键卡片 / `■` | `taskkill /T /F` 杀整棵进程树 |
 | 搜索框输入 | 实时过滤（Flow Launcher 式） |
 | `↑` `↓` `Enter` | 键盘选卡并启动，`Esc` 收起 |
-| 退出抽屉 | 自动清理全部子进程 |
 
 ## drawer.json
 
@@ -70,6 +74,15 @@ dotnet run -c Release -- --probe   # 探针：每 250ms 打印位置，程序化
 - **热区统一用 DIP**：`GetCursorPos` 给物理像素，150% 缩放下直接比会差一个数量级。
 - **热键用 `HwndSource.AddHook`**：GeekDesk 用 WinForms `NativeWindow` 收 `WM_HOTKEY`，
   这里换成 WPF 的 `HwndSource`，不引入 WinForms 依赖。
+- **轮询要在构造末尾启动，不能靠 `SourceInitialized`**：`EnsureHandle()` 会**当场创建
+  HWND 并同步触发**该事件，之后再订阅就永远收不到——这是「悬浮唤不醒」的根因。
+- **热区要按鼠标所在屏算**：`SystemParameters.WorkArea` 只给主屏，多屏时用主屏边界
+  判定副屏边缘永远不触发。改用 `ScreenHelper.WorkAreaAtCursorDip()`。
+- **托盘零依赖**：`Shell_NotifyIcon` + `HwndSource(HWND_MESSAGE)` 自实现，
+  不引 HandyControl/WinUIEx 那种为单个图标拖进整个控件库的方案；
+  并监听 `TaskbarCreated` 以在 Explorer 重启后自动重新注册。
+- **设置页保存要继承 logo 路径**：设置页只编辑「名称|命令|分组」，
+  logo 不在编辑面内，保存时按名称从旧配置继承，否则存一次图标全丢。
 
 ## 参考仓库（均在 nx 看板 b_mvnm9xdkrzmwm）
 
@@ -87,11 +100,15 @@ dotnet run -c Release -- --probe   # 探针：每 250ms 打印位置，程序化
 ```
 src/
   NxDrawer.csproj   net8.0-windows / UseWPF，零 NuGet 依赖
-  Config.cs         DrawerConfig/AppItemConfig + ConfigStore
+  Config.cs         DrawerConfig/AppItemConfig + ConfigStore（Load/Save）
   EdgeWatcher.cs    边缘热区轮询 + 位置移动式显隐动画
   GlobalHotkey.cs   RegisterHotKey + HwndSource 收 WM_HOTKEY
+  TrayIcon.cs       Shell_NotifyIcon 托盘图标 + 右键菜单 + Explorer 重启恢复
+  ScreenHelper.cs   多屏工作区 / DPI 折算
+  NativeMouse.cs    程序化移光标（仅 --edge-test 自测用）
   ProcessManager.cs 子进程表 / 计数 / taskkill /T /F / 退出回调
   MainWindow.xaml   Fluent 抽屉 UI（搜索 + 分组卡片 + 状态栏）
+  SettingsWindow.xaml 设置页（边/尺寸/透明度/延迟/动画/应用列表）
 tools/
   gen-logos.mjs     复用 ../nx-pg/tools/logo-gen 产出 10 个 nx logo + app.ico
 ```

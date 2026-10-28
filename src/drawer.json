@@ -1,0 +1,37 @@
+{
+  // nx-drawer / cs-dw 配置
+  // 停靠边: left | top | right
+  "edge": "left",
+
+  // 抽屉宽度（DIP）
+  "width": 340,
+  // 抽屉高度（DIP），0 = 按屏幕工作区高度的 80% 自适应
+  "height": 0,
+
+  // 抽屉整体不透明度 0.3 ~ 1.0
+  "opacity": 0.92,
+
+  // 鼠标进入边缘热区多少毫秒后滑出（防误触）
+  "revealDelayMs": 120,
+  // 鼠标离开抽屉多少毫秒后收回，0 = 不自动收
+  "hideDelayMs": 600,
+  // 滑入/滑出动画时长（毫秒）
+  "slideMs": 220,
+
+  // 应用列表：每张卡片一项
+  //   cmd  —— 经 cmd /c 执行，支持 PATH 里的 nx-xxx shim
+  //   url  —— 交给系统默认浏览器打开
+  //   group —— 相同 group 归为同一分区并共享运行计数（留空则用 name）
+  "apps": [
+    { "name": "nx-kv", "logo": "assets/logos/nx-kv/logo-rounded.png", "cmd": "nx-kv serve", "group": "nx 系列" },
+    { "name": "nx-nx", "logo": "assets/logos/nx-nx/logo-rounded.png", "cmd": "nx-nx", "group": "nx 系列" },
+    { "name": "nx-pg", "logo": "assets/logos/nx-pg/logo-rounded.png", "cmd": "nx-pg", "group": "nx 系列" },
+    { "name": "nx-sk", "logo": "assets/logos/nx-sk/logo-rounded.png", "cmd": "nx-sk", "group": "nx 系列" },
+    { "name": "nx-rp", "logo": "assets/logos/nx-rp/logo-rounded.png", "cmd": "nx-rp", "group": "nx 系列" },
+    { "name": "nx-as", "logo": "assets/logos/nx-as/logo-rounded.png", "cmd": "nx-as", "group": "nx 系列" },
+    { "name": "nx-ft", "logo": "assets/logos/nx-ft/logo-rounded.png", "cmd": "nx-ft", "group": "nx 系列" },
+    { "name": "nx-kn", "logo": "assets/logos/nx-kn/logo-rounded.png", "cmd": "nx-kn", "group": "nx 系列" },
+    { "name": "nx-rh", "logo": "assets/logos/nx-rh/logo-rounded.png", "cmd": "nx-rh", "group": "nx 系列" },
+    { "name": "GitHub", "url": "https://github.com", "group": "常用" }
+  ]
+}

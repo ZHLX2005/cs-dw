@@ -32,6 +32,10 @@ jobs:
         id: meta
         # ⚠️ windows-latest 的默认 shell 是 **PowerShell**，不是 bash。
         # 写 bash 语法（if/then/fi）会直接 ParserError。显式声明 shell 更保险。
+        #
+        # ⚠️ 另：不要用 PowerShell 的 ">> $GITHUB_OUTPUT" 写法——
+        #    多行/带特殊字符时容易静默写空。改用 GITHUB_OUTPUT 环境变量的
+        #    标准 here-string 追加，一次写一个 key=value，最稳。
         shell: pwsh
         run: |
           if ("${{ github.event_name }}" -eq "workflow_dispatch") {
@@ -39,19 +43,31 @@ jobs:
           } else {
             $tag = "${{ github.ref_name }}"
           }
+          if ([string]::IsNullOrWhiteSpace($tag)) {
+            throw "未能解析出 tag（event=${{ github.event_name }}）"
+          }
           $version = $tag -replace '^v', ''
-          "tag=$tag" >> $GITHUB_OUTPUT
-          "name=cs-dw $tag" >> $GITHUB_OUTPUT
-          "version=$version" >> $GITHUB_OUTPUT
+          @"
+          tag=$tag
+          name=cs-dw $tag
+          version=$version
+          "@ >> $env:GITHUB_OUTPUT
+          Write-Host "resolved tag=$tag version=$version"
 
       - name: Build
         run: dotnet publish src/NxDrawer.csproj -c Release -o publish -r win-x64 --self-contained false
 
       - name: Package
         shell: pwsh
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
         run: |
-          $version = '${{ steps.meta.outputs.version }}'
-          $zip = "cs-dw-$version-win-x64.zip"
+          # 用 $env:VERSION 而不是 ${{ }} 直接内插：内插发生在 runner 拼装脚本时，
+          # 一旦上游输出为空，脚本会静默拼出 "cs-dw--win-x64.zip" 这种坏名字。
+          if ([string]::IsNullOrWhiteSpace($env:VERSION)) {
+            throw "VERSION 为空，meta 步骤没拿到版本号"
+          }
+          $zip = "cs-dw-$($env:VERSION)-win-x64.zip"
           # 只打包运行所需：exe + dll + 配置 + 图标资源
           $files = @(
             'publish/nx-drawer.exe',
@@ -61,17 +77,23 @@ jobs:
             'publish/drawer.json',
             'publish/assets'
           ) | Where-Object { Test-Path $_ }
+          if ($files.Count -eq 0) { throw "publish 目录里没有可打包文件" }
           Compress-Archive -Path $files -DestinationPath $zip -Force
           Write-Host "packed $zip"
+          Get-ChildItem $zip | Format-Table Name, Length
 
       - name: Create release
         uses: softprops/action-gh-release@v2
+        env:
+          TAG: ${{ steps.meta.outputs.tag }}
+          RELEASE_NAME: ${{ steps.meta.outputs.name }}
+          VERSION: ${{ steps.meta.outputs.version }}
         with:
-          tag_name: ${{ steps.meta.outputs.tag }}
-          name: ${{ steps.meta.outputs.name }}
+          tag_name: ${{ env.TAG }}
+          name: ${{ env.RELEASE_NAME }}
           generate_release_notes: true
           body: |
-            ## cs-dw ${{ steps.meta.outputs.tag }}
+            ## cs-dw ${{ env.VERSION }}
 
             Windows 边缘抽屉启动器（C# / WPF / .NET 8）。
 
@@ -85,7 +107,7 @@ jobs:
             3. 首次运行会在同目录生成 `drawer.json`，按需编辑
 
             运行时需 .NET 8 Desktop Runtime；或自行下载 .NET Desktop Runtime x64。
-          files: cs-dw-*.zip
+          files: cs-dw-*-win-x64.zip
 
       - name: Upload artifact (CI 产物)
         uses: actions/upload-artifact@v4

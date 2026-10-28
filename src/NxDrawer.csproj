@@ -18,4 +18,10 @@
     <Content Include="assets\**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <!-- 配置模板随包发布：用户解压后直接改 drawer.json 即可，
+       不必先跑一次让它自动生成（生成的版本没经过用户校对）。 -->
+  <ItemGroup>
+    <None Include="drawer.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

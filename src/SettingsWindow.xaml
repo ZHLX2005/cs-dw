@@ -1,0 +1,95 @@
+<Window x:Class="NxDrawer.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="nx-drawer 设置"
+        Width="520" Height="620"
+        WindowStartupLocation="CenterOwner"
+        FontFamily="Segoe UI"
+        Background="#F01A1C24"
+        Foreground="#F5F5F7"
+        WindowStyle="SingleBorderWindow">
+  <Grid Margin="18">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+
+    <TextBlock Grid.Row="0" Text="设置" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,14"/>
+
+    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+      <StackPanel>
+        <!-- 停靠边 -->
+        <TextBlock Text="停靠边" Foreground="#B4FFFFFF" FontSize="12" Margin="0,0,0,6"/>
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+          <RadioButton x:Name="EdgeLeft" GroupName="Edge" Content="左侧" Margin="0,0,14,0" Checked="OnEdgeChanged"/>
+          <RadioButton x:Name="EdgeTop" GroupName="Edge" Content="顶部" Margin="0,0,14,0" Checked="OnEdgeChanged"/>
+          <RadioButton x:Name="EdgeRight" GroupName="Edge" Content="右侧" Checked="OnEdgeChanged"/>
+        </StackPanel>
+
+        <!-- 尺寸 -->
+        <TextBlock Text="宽度 / 高度（DIP，0 = 自动）" Foreground="#B4FFFFFF" FontSize="12" Margin="0,0,0,6"/>
+        <Grid Margin="0,0,0,14">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="16"/>
+            <ColumnDefinition Width="*"/>
+          </Grid.ColumnDefinitions>
+          <TextBox x:Name="WidthBox" Grid.Column="0" Background="#1FFFFFFF" Foreground="#F5F5F7"
+                   BorderBrush="#28FFFFFF" CaretBrush="#FFE76F" Padding="8,6" Text="340"/>
+          <TextBox x:Name="HeightBox" Grid.Column="2" Background="#1FFFFFFF" Foreground="#F5F5F7"
+                   BorderBrush="#28FFFFFF" CaretBrush="#FFE76F" Padding="8,6" Text="0"/>
+        </Grid>
+
+        <!-- 透明度 -->
+        <TextBlock Text="透明度" Foreground="#B4FFFFFF" FontSize="12" Margin="0,0,0,6"/>
+        <Grid Margin="0,0,0,4">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+          </Grid.ColumnDefinitions>
+          <Slider x:Name="OpacitySlider" Grid.Column="0" Minimum="0.3" Maximum="1.0" Value="0.92"
+                  Foreground="#FFE76F" VerticalAlignment="Center"/>
+          <TextBlock x:Name="OpacityText" Grid.Column="1" Text="0.92" Width="42" TextAlignment="Right"
+                     Foreground="#F5F5F7" VerticalAlignment="Center"/>
+        </Grid>
+
+        <!-- 延迟 -->
+        <TextBlock Text="唤出延迟 / 收回延迟（毫秒）" Foreground="#B4FFFFFF" FontSize="12" Margin="0,0,0,6"/>
+        <Grid Margin="0,0,0,14">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="16"/>
+            <ColumnDefinition Width="*"/>
+          </Grid.ColumnDefinitions>
+          <TextBox x:Name="RevealBox" Grid.Column="0" Background="#1FFFFFFF" Foreground="#F5F5F7"
+                   BorderBrush="#28FFFFFF" CaretBrush="#FFE76F" Padding="8,6" Text="120"/>
+          <TextBox x:Name="HideBox" Grid.Column="2" Background="#1FFFFFFF" Foreground="#F5F5F7"
+                   BorderBrush="#28FFFFFF" CaretBrush="#FFE76F" Padding="8,6" Text="600"/>
+        </Grid>
+
+        <!-- 动画 -->
+        <TextBlock Text="动画时长（毫秒）" Foreground="#B4FFFFFF" FontSize="12" Margin="0,0,0,6"/>
+        <TextBox x:Name="SlideBox" Background="#1FFFFFFF" Foreground="#F5F5F7"
+                 BorderBrush="#28FFFFFF" CaretBrush="#FFE76F" Padding="8,6" Text="220" Margin="0,0,0,14"/>
+
+        <!-- 应用列表管理 -->
+        <TextBlock Text="应用（每行一条）" Foreground="#B4FFFFFF" FontSize="12" Margin="0,0,0,6"/>
+        <TextBlock Text="格式：名称 | 命令或网址 | 分组    例：nx-kv | nx-kv serve | 工具"
+                   Foreground="#80FFFFFF" FontSize="11" Margin="0,0,0,6"/>
+        <TextBox x:Name="AppsBox" Height="150" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"
+                 Background="#1FFFFFFF" Foreground="#F5F5F7" BorderBrush="#28FFFFFF"
+                 CaretBrush="#FFE76F" Padding="8,6"
+                 FontFamily="Consolas" FontSize="12"
+                 VerticalContentAlignment="Top"/>
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- 底部按钮 -->
+    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+      <Button Content="恢复默认" Width="90" Height="30" Margin="0,0,10,0" Click="OnReset"/>
+      <Button Content="取消" Width="80" Height="30" Margin="0,0,10,0" Click="OnCancel"/>
+      <Button Content="保存" Width="80" Height="30" IsDefault="True" Click="OnSave"/>
+    </StackPanel>
+  </Grid>
+</Window>

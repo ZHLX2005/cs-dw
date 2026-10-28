@@ -107,6 +107,32 @@ public static class ConfigStore
         return cfg;
     }
 
+    /// <summary>保存配置到磁盘。</summary>
+    /// <param name="path">目标文件</param>
+    /// <param name="cfg">配置</param>
+    /// <param name="previous">旧配置——用来继承设置页没暴露的字段（如 logo 路径）</param>
+    public static void Save(string path, DrawerConfig cfg, DrawerConfig? previous = null)
+    {
+        // 设置页只编辑「名称 | 命令 | 分组」，logo 路径不在编辑面里——
+        // 按名称从旧配置继承，否则保存一次就把所有图标弄丢了。
+        if (previous is not null)
+        {
+            foreach (var app in cfg.Apps)
+            {
+                var old = previous.Apps.FirstOrDefault(a =>
+                    string.Equals(a.Name, app.Name, StringComparison.OrdinalIgnoreCase));
+                if (old is null) continue;
+                app.Logo = old.Logo;
+                app.Cwd = old.Cwd;
+                if (string.IsNullOrWhiteSpace(app.Cmd) && string.IsNullOrWhiteSpace(app.Url))
+                    app.Cmd = old.Cmd;
+            }
+        }
+
+        var json = JsonSerializer.Serialize(cfg, JsonOpts);
+        File.WriteAllText(path, json, new System.Text.UTF8Encoding(false));
+    }
+
     private const string DefaultJson = """
 {
   // 停靠边: left | top | right

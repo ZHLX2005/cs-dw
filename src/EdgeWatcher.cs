@@ -29,7 +29,7 @@ namespace NxDrawer;
 public sealed class EdgeWatcher : IDisposable
 {
     private readonly Window _drawer;
-    private readonly DrawerConfig _cfg;
+    private DrawerConfig _cfg;
     private readonly DispatcherTimer _poll = new() { Interval = TimeSpan.FromMilliseconds(16) };
     private readonly DispatcherTimer _revealDelay = new() { Interval = TimeSpan.FromMilliseconds(1) };
     private readonly DispatcherTimer _hideDelay = new() { Interval = TimeSpan.FromMilliseconds(1) };
@@ -65,10 +65,18 @@ public sealed class EdgeWatcher : IDisposable
 
     // ---- 位置计算：展开位 / 隐藏位 ----
 
+    /// <summary>设置页保存后热重载配置并重新落位</summary>
+    public void ApplyConfig(DrawerConfig cfg)
+    {
+        _cfg = cfg;
+        PositionInitial();
+        if (_revealed) AnimateTo(ShownPos(), show: true);
+    }
+
     /// <summary>展开时的窗口位置</summary>
     private (double Left, double Top) ShownPos()
     {
-        var wa = SystemParameters.WorkArea;
+        var wa = WorkArea();
         double w = _drawer.Width, h = _drawer.Height;
         return Edge switch
         {
@@ -81,7 +89,7 @@ public sealed class EdgeWatcher : IDisposable
     /// <summary>隐藏时的窗口位置（缩进屏幕外，留 HandleDip 把手）</summary>
     private (double Left, double Top) HiddenPos()
     {
-        var wa = SystemParameters.WorkArea;
+        var wa = WorkArea();
         double w = _drawer.Width, h = _drawer.Height;
         return Edge switch
         {
@@ -90,6 +98,13 @@ public sealed class EdgeWatcher : IDisposable
             _       => (wa.Left - w + HandleDip, wa.Top + (wa.Height - h) / 2),
         };
     }
+
+    /// <summary>
+    /// 抽屉所在屏的工作区。
+    /// 用「鼠标当前所在屏」而不是 SystemParameters.WorkArea（那只给主屏）——
+    /// 多屏时抽屉在副屏边缘，用主屏工作区算热区就永远触发不到。
+    /// </summary>
+    private Rect WorkArea() => ScreenHelper.WorkAreaAtCursorDip();
 
     // ---- 边缘轮询 ----
 
@@ -104,7 +119,7 @@ public sealed class EdgeWatcher : IDisposable
         var m = src?.CompositionTarget?.TransformFromDevice ?? Matrix.Identity;
         var cur = new Point(p.X * m.M11, p.Y * m.M22);
 
-        var wa = SystemParameters.WorkArea;
+        var wa = WorkArea();
         bool onEdge = Edge switch
         {
             "left"  => cur.X <= wa.Left + HotZoneDip,
@@ -205,7 +220,7 @@ public sealed class EdgeWatcher : IDisposable
     /// <summary>贴边初始定位：直接落到隐藏位（只露把手），不播动画。</summary>
     public void PositionInitial()
     {
-        var wa = SystemParameters.WorkArea;
+        var wa = WorkArea();
         _drawer.Width = _cfg.Width;
         _drawer.Height = _cfg.Height > 0 ? _cfg.Height : wa.Height * 0.8;
 

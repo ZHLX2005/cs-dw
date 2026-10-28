@@ -14,6 +14,7 @@ public partial class MainWindow : Window
     private readonly ProcessManager _procs = new();
     private readonly EdgeWatcher _watcher;
     private readonly GlobalHotkey _hotkey = new();
+    private readonly TrayIcon _tray = new();
     private readonly List<CardRow> _rows = new();   // 卡片行（app + 徽标 + 停止按钮）
 
     public MainWindow()
@@ -39,10 +40,39 @@ public partial class MainWindow : Window
         _hotkey.Pressed += () => Dispatcher.Invoke(() => _watcher.Toggle());
         _hotkey.Register(ModifierKeys.Control | ModifierKeys.Alt, Key.D, this);
 
-        Closed += (_, _) => { _procs.StopAll(); _hotkey.Dispose(); _watcher.Dispose(); };
+        // 系统托盘：左键切换抽屉，右键菜单「显示/隐藏」+「设置」+「退出」
+        _tray.ToggleRequested += () => Dispatcher.Invoke(() => _watcher.Toggle());
+        _tray.SettingsRequested += () => Dispatcher.Invoke(OpenSettings);
+        _tray.ExitRequested += () => Dispatcher.Invoke(QuitApp);
+        _tray.Register(this);
 
-        // 句柄建好后启动边缘轮询
-        SourceInitialized += (_, _) => _watcher.Start();
+        Closed += (_, _) => { _procs.StopAll(); _hotkey.Dispose(); _watcher.Dispose(); _tray.Dispose(); };
+
+        // 边缘轮询必须在这里启动，不能靠 SourceInitialized：
+        // 上面的 _hotkey.Register → EnsureHandle() 会**当场创建 HWND 并同步触发
+        // SourceInitialized**，之后再订阅该事件就永远收不到了（悬浮唤不醒的根因）。
+        _watcher.Start();
+    }
+
+    /// <summary>打开设置页</summary>
+    private void OpenSettings()
+    {
+        var win = new SettingsWindow(_cfg) { Owner = this };
+        if (win.ShowDialog() == true)
+        {
+            // 保存后热重载：重建抽屉并重新落位
+            _watcher.ApplyConfig(_cfg);
+            DrawerPanel.Opacity = _cfg.Opacity;
+            EdgeBadge.Text = _cfg.Edge;
+            UpdateStatus();
+        }
+    }
+
+    /// <summary>退出：清掉全部子进程再关窗（托盘菜单 / 窗口 ✕ 走同一条路）</summary>
+    private void QuitApp()
+    {
+        _procs.StopAll();
+        Application.Current.Shutdown();
     }
 
     // ---- 卡片构建：按 group 分区 ----
@@ -282,13 +312,12 @@ public partial class MainWindow : Window
     public (double Left, double Top, bool Visible, bool HitTest, bool Revealed) DrawerState()
         => (Left, Top, Visibility == Visibility.Visible, IsHitTestVisible, _watcher.IsRevealed);
 
+    /// <summary>托盘是否注册成功</summary>
+    public bool TrayAdded => _tray.Added;
+
     /// <summary>供 --probe 模式直接驱动显隐</summary>
     public void ForceReveal() => _watcher.Reveal();
     public void ForceHide() => _watcher.Hide();
 
-    private void OnQuit(object sender, RoutedEventArgs e)
-    {
-        _procs.StopAll();
-        Application.Current.Shutdown();
-    }
+    private void OnQuit(object sender, RoutedEventArgs e) => QuitApp();
 }

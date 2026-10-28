@@ -33,7 +33,9 @@ public partial class MainWindow : Window
         });
 
         BuildCards();
-        _procs.Changed += UpdateStatus;
+        // Changed 会在**线程池线程**被触发（进程退出回调），必须切回 UI 线程
+        // 才能碰 WPF 控件——否则跨线程异常直接崩进程。
+        _procs.Changed += () => Dispatcher.Invoke(UpdateStatus);
         EdgeBadge.Text = _cfg.Edge;
 
         // 全局热键：Ctrl+Alt+D 切换显隐（失败静默降级）
@@ -314,6 +316,23 @@ public partial class MainWindow : Window
 
     /// <summary>托盘是否注册成功</summary>
     public bool TrayAdded => _tray.Added;
+
+    /// <summary>当前存活子进程总数（自测断言用）</summary>
+    public int RunningCount => _procs.Counts.Values.Sum();
+
+    /// <summary>
+    /// 启动链路自测：启动一个会立刻退出的子进程，走完
+    /// 「启动 → 退出回调 → 计数刷新」全链路。
+    /// </summary>
+    public void LaunchTest()
+    {
+        var app = new AppItemConfig
+        {
+            Name = "__launch_test__",
+            Cmd = "cmd /c exit 0",
+        };
+        _procs.Start(app);
+    }
 
     /// <summary>供 --probe 模式直接驱动显隐</summary>
     public void ForceReveal() => _watcher.Reveal();

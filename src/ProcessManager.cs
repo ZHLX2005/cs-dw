@@ -28,7 +28,15 @@ public sealed class ProcessManager : IDisposable
         {
             lock (_lock)
             {
-                return _list.GroupBy(e => e.Group).ToDictionary(g => g.Key, g => g.Count());
+                // 进程句柄可能已失效，取 Id 会抛——跳过即可，
+                // 反正退出回调本来就会把它从表里摘掉。
+                var alive = new List<string>();
+                foreach (var e in _list)
+                {
+                    try { _ = e.Proc.Id; alive.Add(e.Group); }
+                    catch { /* 已释放 */ }
+                }
+                return alive.GroupBy(g => g).ToDictionary(g => g.Key, g => g.Count());
             }
         }
     }
@@ -79,11 +87,7 @@ public sealed class ProcessManager : IDisposable
             var entry = new ProcessEntry { Group = group, Proc = p };
             // Exited 需要 EnableRaisingEvents；退出回调里顺手清表
             p.EnableRaisingEvents = true;
-            p.Exited += (_, _) =>
-            {
-                lock (_lock) _list.RemoveAll(e => e.Proc.Id == p.Id);
-                Changed?.Invoke();
-            };
+            p.Exited += (_, _) => OnProcessExited(p);
             lock (_lock) _list.Add(entry);
             Changed?.Invoke();
             return true;
@@ -94,7 +98,26 @@ public sealed class ProcessManager : IDisposable
         }
     }
 
-    /// <summary>停掉某组全部实例：taskkill /T /F 连带 node 孙进程。</summary>
+    /// <summary>
+    /// 进程退出回调。
+    /// ⚠️ 这个回调跑在**线程池线程**上（不是 UI 线程）：
+    ///   Process.Exited 由系统事件线程触发，WPF 控件只能在 UI 线程碰。
+    ///   所以这里只做「清表 + 抛事件」，UI 更新由订阅方切回 UI 线程做。
+    ///   早期版本直接在这里 Changed?.Invoke() → UI 跨线程异常 → 点击启动即崩溃。
+    /// </summary>
+    private void OnProcessExited(Process p)
+    {
+        int pid;
+        try { pid = p.Id; }
+        catch { return; }   // 句柄已释放，取不到 id 就放弃清理
+
+        lock (_lock) _list.RemoveAll(e => e.Proc.Id == pid);
+        Changed?.Invoke();
+    }
+
+    /// <summary>
+    /// 停掉某组全部实例：taskkill /T /F 连带 node 孙进程。
+    /// </summary>
     public int StopGroup(string group)
     {
         ProcessEntry[] targets;
@@ -104,10 +127,13 @@ public sealed class ProcessManager : IDisposable
         {
             try
             {
+                // 进程可能已自行退出——取 Id 会抛 InvalidOperationException，
+                // 整段包在 try 里，失败只跳过这一个。
+                var pid = e.Proc.Id;
                 using var killer = Process.Start(new ProcessStartInfo
                 {
                     FileName = "taskkill",
-                    Arguments = $"/PID {e.Proc.Id} /T /F",
+                    Arguments = $"/PID {pid} /T /F",
                     CreateNoWindow = true,
                     UseShellExecute = false,
                 });

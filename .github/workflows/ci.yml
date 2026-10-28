@@ -34,6 +34,16 @@ jobs:
         # --smoke：抽屉起来 2.6s 自动退出，验证运行时无异常（非单测，是冒烟）
         run: dotnet run --project src/NxDrawer.csproj -c Release --no-build -- --smoke
 
+      - name: Launch chain test
+        # 启动链路自测：真启动子进程 → 退出回调 → 计数刷新。
+        # 断言「进程起来过且退出后归零」，退出码非 0 即失败——
+        # 点击启动崩溃这类跨线程问题会在这一步暴露。
+        run: dotnet run --project src/NxDrawer.csproj -c Release --no-build -- --launch-test
+
+      - name: Edge wake test
+        # 边缘唤醒自测：程序化把光标移到屏幕边缘，验证「悬浮唤出」真的生效
+        run: dotnet run --project src/NxDrawer.csproj -c Release --no-build -- --edge-test
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:

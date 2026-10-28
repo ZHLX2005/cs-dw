@@ -62,12 +62,13 @@ jobs:
         env:
           VERSION: ${{ steps.meta.outputs.version }}
         run: |
-          # 用 $env:VERSION 而不是 ${{ }} 直接内插：内插发生在 runner 拼装脚本时，
-          # 一旦上游输出为空，脚本会静默拼出 "cs-dw--win-x64.zip" 这种坏名字。
+          # 用 $env:VERSION 而不是把表达式直接内插进脚本：
+          # 内插发生在 runner 拼装脚本时，一旦上游输出为空，
+          # 脚本会静默拼出 "cs-dw--win-x64.zip" 这种坏名字。
           if ([string]::IsNullOrWhiteSpace($env:VERSION)) {
             throw "VERSION 为空，meta 步骤没拿到版本号"
           }
-          $zip = "cs-dw-$($env:VERSION)-win-x64.zip"
+          $zip = "cs-dw-" + $env:VERSION + "-win-x64.zip"
           # 只打包运行所需：exe + dll + 配置 + 图标资源
           $files = @(
             'publish/nx-drawer.exe',

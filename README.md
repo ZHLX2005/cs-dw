@@ -1,9 +1,23 @@
-# nx-drawer — Windows 边缘抽屉启动器（nx 家族工作台）
+# cs-dw (C# Drawer) — Windows 边缘抽屉启动器
 
 鼠标靠近屏幕**左 / 上 / 右**边缘 → 半透明抽屉自动滑出 → 点卡片启动 / 监控 / 停止
 nx 系列工具（nx-kv / nx-nx / nx-pg / …），URL 卡片直接开浏览器。
 
 纯 C#/WPF（.NET 8），无 WebView、无 Electron、零 NuGet 依赖。配置驱动：`drawer.json`。
+
+## 下载
+
+从 [Releases](https://github.com/ZHLX2005/cs-dw/releases) 下载 `cs-dw-<version>-win-x64.zip`，
+解压运行 `nx-drawer.exe`。运行时需 .NET 8 Desktop Runtime。
+
+## 流水线
+
+| 工作流 | 触发 | 做什么 |
+|---|---|---|
+| `ci.yml` | push / PR / 手动 | Windows runner 构建 → 三个自测（冒烟 / 启动链路 / 边缘唤醒）→ 上传 artifact |
+| `release.yml` | 推 `v*` tag / 手动 | publish → 打 zip → 建 Release（自动生成 release notes） |
+
+发版：改版本号 → `git tag -a v0.1.1 -m "..." && git push origin v0.1.1`。
 
 ## 构建工具链
 
@@ -13,18 +27,17 @@ nx 系列工具（nx-kv / nx-nx / nx-pg / …），URL 卡片直接开浏览器�
 | Node.js (`node`) | 仅重新生成 logo 时跑 `tools/gen-logos.mjs` | ✅ |
 | Visual Studio | **不需要** | — |
 
-## 运行
+## 本地运行
 
 ```bash
 cd src
 dotnet build -c Release
 dotnet run -c Release              # 常驻
-dotnet run -c Release -- --smoke   # 冒烟：出现 2.6s 自动退出
-dotnet run -c Release -- --probe   # 探针：每 250ms 打印位置，程序化验证显隐
-dotnet run -c Release -- --edge-test  # 边缘自测：程序化移光标到边缘验证唤醒
+dotnet run -c Release -- --smoke     # 冒烟：出现 2.6s 自动退出
+dotnet run -c Release -- --probe     # 探针：每 250ms 打印位置，程序化验证显隐
+dotnet run -c Release -- --launch-test  # 启动链路自测（断言计数起来又归零）
+dotnet run -c Release -- --edge-test    # 边缘唤醒自测（程序化移光标到边缘）
 ```
-
-首次运行在 exe 目录产出 `drawer.json` 模板。
 
 ## 交互
 

@@ -1,0 +1,7 @@
+<Application x:Class="NxDrawer.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Startup="OnStartup">
+  <!-- 窗口由 OnStartup 创建（含 smoke 逻辑），不设 StartupUri 以免双开 -->
+  <Application.Resources/>
+</Application>

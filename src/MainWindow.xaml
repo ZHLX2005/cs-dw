@@ -1,0 +1,88 @@
+<Window x:Class="NxDrawer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="nx-drawer"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ShowInTaskbar="False"
+        ShowActivated="False"
+        ResizeMode="NoResize"
+        FontFamily="Segoe UI"
+        Width="340" Height="620">
+  <Grid>
+    <!-- 抽屉本体：半透明深色圆角面板。配色取自 wpfui/HandyControl 的 Fluent 深色 -->
+    <Border x:Name="DrawerPanel"
+            CornerRadius="16"
+            Background="#F01A1C24"
+            BorderBrush="#28FFFFFF"
+            BorderThickness="1"
+            Padding="14,10">
+      <Border.Effect>
+        <!-- 柔和投影，让浮起的抽屉有层次（DeskBox 的 widget 观感） -->
+        <DropShadowEffect Color="#AA000000" BlurRadius="28" ShadowDepth="3" Opacity="0.55"/>
+      </Border.Effect>
+      <Grid>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="*"/>
+          <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- header：标题 + 边位徽标 + 关闭 -->
+        <Grid Grid.Row="0" Margin="2,0,2,8">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+          </Grid.ColumnDefinitions>
+          <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+            <Border Width="22" Height="22" CornerRadius="6" Background="#002EA6">
+              <TextBlock Text="D" Foreground="#FFE76F" FontSize="13" FontWeight="Bold"
+                         HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <TextBlock Text="nx-drawer" Foreground="#F5F5F7" FontSize="15" FontWeight="SemiBold"
+                       Margin="8,0,0,0" VerticalAlignment="Center"/>
+            <Border Background="#24FFFFFF" CornerRadius="4" Padding="5,1" Margin="8,0,0,0"
+                    VerticalAlignment="Center">
+              <TextBlock x:Name="EdgeBadge" Text="left" Foreground="#B4FFFFFF" FontSize="10"/>
+            </Border>
+          </StackPanel>
+          <TextBlock x:Name="HintText" Grid.Column="1" Text="Ctrl+Alt+D" Foreground="#66FFFFFF"
+                     FontSize="11" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+          <Button Grid.Column="2" Content="✕" Width="24" Height="24" Margin="6,0,0,0"
+                  Background="Transparent" Foreground="#8CFFFFFF" BorderThickness="0"
+                  FontSize="12" Cursor="Hand" Focusable="False" Click="OnQuit"/>
+        </Grid>
+
+        <!-- 搜索框：Flow Launcher 式「输入即过滤」 -->
+        <Grid Grid.Row="1" Margin="0,0,0,8">
+          <Border Background="#1FFFFFFF" CornerRadius="8" Padding="8,6">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <TextBlock Grid.Column="0" Text="🔍" Foreground="#8CFFFFFF" FontSize="12" VerticalAlignment="Center"/>
+              <TextBox x:Name="SearchBox" Grid.Column="1" Background="Transparent" BorderThickness="0"
+                       Foreground="#F5F5F7" CaretBrush="#FFE76F" FontSize="13"
+                       Margin="6,0,0,0" VerticalContentAlignment="Center"
+                       TextChanged="OnSearchChanged" KeyDown="OnSearchKeyDown"/>
+            </Grid>
+          </Border>
+        </Grid>
+
+        <!-- 卡片列表：按 group 分区展示（agile-tiles / DeskBox 的组织方式） -->
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" x:Name="ListScroll">
+          <StackPanel x:Name="AppList"/>
+        </ScrollViewer>
+
+        <!-- footer：运行中进程统计 -->
+        <Border Grid.Row="3" Margin="0,8,0,0" Padding="0,6,0,0" BorderBrush="#1AFFFFFF" BorderThickness="0,1,0,0">
+          <TextBlock x:Name="StatusText" Foreground="#8CFFFFFF" FontSize="11" Text="就绪"/>
+        </Border>
+      </Grid>
+    </Border>
+  </Grid>
+</Window>

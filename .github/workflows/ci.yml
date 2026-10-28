@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    # WPF 是 Windows-only：net8.0-windows + UseWPF，必须 Windows runner
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore src/NxDrawer.csproj
+
+      - name: Build
+        run: dotnet build src/NxDrawer.csproj -c Release --no-restore
+
+      - name: Smoke test
+        # --smoke：抽屉起来 2.6s 自动退出，验证运行时无异常（非单测，是冒烟）
+        run: dotnet run --project src/NxDrawer.csproj -c Release --no-build -- --smoke
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nx-drawer-win-x64
+          path: src/bin/Release/net8.0-windows/
+          if-no-files-found: error
+          retention-days: 30

@@ -1,0 +1,92 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '要发布的 tag（如 v0.1.0）'
+        required: true
+        type: string
+
+permissions:
+  contents: write   # 建 release / 上传资产要写权限
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # 需要完整 tag 历史
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Resolve tag
+        id: meta
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ inputs.tag }}"
+          else
+            TAG="${{ github.ref_name }}"
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "name=cs-dw $TAG" >> $GITHUB_OUTPUT
+          # 去掉 v 前缀拿纯版本号，用作 zip 名
+          echo "version=${TAG#v}" >> $GITHUB_OUTPUT
+
+      - name: Build
+        run: dotnet publish src/NxDrawer.csproj -c Release -o publish -r win-x64 --self-contained false
+
+      - name: Package
+        shell: pwsh
+        run: |
+          $version = '${{ steps.meta.outputs.version }}'
+          $zip = "cs-dw-$version-win-x64.zip"
+          # 只打包运行所需：exe + dll + 配置 + 图标资源
+          $files = @(
+            'publish/nx-drawer.exe',
+            'publish/nx-drawer.dll',
+            'publish/nx-drawer.deps.json',
+            'publish/nx-drawer.runtimeconfig.json',
+            'publish/drawer.json',
+            'publish/assets'
+          ) | Where-Object { Test-Path $_ }
+          Compress-Archive -Path $files -DestinationPath $zip -Force
+          Write-Host "packed $zip"
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: ${{ steps.meta.outputs.name }}
+          generate_release_notes: true
+          body: |
+            ## cs-dw ${{ steps.meta.outputs.tag }}
+
+            Windows 边缘抽屉启动器（C# / WPF / .NET 8）。
+
+            - 鼠标贴屏幕边缘 → 半透明抽屉滑出
+            - 托盘常驻，右键菜单：显示/隐藏 · 设置… · 退出
+            - 配置驱动（`drawer.json`），支持 nx 系列 CLI 子进程统一管理
+
+            ### 使用
+            1. 解压 zip
+            2. 运行 `nx-drawer.exe`
+            3. 首次运行会在同目录生成 `drawer.json`，按需编辑
+
+            运行时需 .NET 8 Desktop Runtime；或自行下载 .NET Desktop Runtime x64。
+          files: cs-dw-*.zip
+
+      - name: Upload artifact (CI 产物)
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ steps.meta.outputs.version }}
+          path: publish/
+          retention-days: 30

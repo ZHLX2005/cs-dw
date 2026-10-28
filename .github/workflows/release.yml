@@ -30,16 +30,19 @@ jobs:
 
       - name: Resolve tag
         id: meta
+        # ⚠️ windows-latest 的默认 shell 是 **PowerShell**，不是 bash。
+        # 写 bash 语法（if/then/fi）会直接 ParserError。显式声明 shell 更保险。
+        shell: pwsh
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            TAG="${{ inputs.tag }}"
-          else
-            TAG="${{ github.ref_name }}"
-          fi
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
-          echo "name=cs-dw $TAG" >> $GITHUB_OUTPUT
-          # 去掉 v 前缀拿纯版本号，用作 zip 名
-          echo "version=${TAG#v}" >> $GITHUB_OUTPUT
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $tag = "${{ inputs.tag }}"
+          } else {
+            $tag = "${{ github.ref_name }}"
+          }
+          $version = $tag -replace '^v', ''
+          "tag=$tag" >> $GITHUB_OUTPUT
+          "name=cs-dw $tag" >> $GITHUB_OUTPUT
+          "version=$version" >> $GITHUB_OUTPUT
 
       - name: Build
         run: dotnet publish src/NxDrawer.csproj -c Release -o publish -r win-x64 --self-contained false

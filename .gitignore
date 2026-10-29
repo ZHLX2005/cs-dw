@@ -2,3 +2,6 @@ bin/
 obj/
 node_modules/
 *.user
+
+# 交付脚本产物
+/dist/

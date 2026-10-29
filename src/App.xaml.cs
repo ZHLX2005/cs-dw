@@ -105,6 +105,35 @@ public partial class App : Application
             t.Start();
         }
 
+        if (e.Args.Contains("--tray-test"))
+        {
+            // 托盘右键自测：程序化投递 WM_APP+1（lParam LOWORD=WM_RBUTTONUP），
+            // 验证右键消息真的能到达 ShowContextMenu。
+            // 历史 bug：v4 下 lParam 整体取值 ≠ WM_RBUTTONUP → 右键完全无反应。
+            var t = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
+            var n = 0;
+            var ok = false;
+            t.Tick += (_, _) =>
+            {
+                n++;
+                if (n == 1) win.SimulateTrayRightClick();
+                var shown = win.TrayContextMenuShown;
+                var added = win.TrayAdded;
+                Console.WriteLine($"[{n * 400,5}ms] TrayAdded={added} ContextMenuShown={shown}");
+                if (n >= 6)
+                {
+                    t.Stop();
+                    ok = added && shown;
+                    Console.WriteLine(ok
+                        ? "[result] 托盘右键链路正常：图标已注册且右键消息到达菜单"
+                        : $"[result] 异常：added={added} menuShown={shown}");
+                    win.Close();
+                    Shutdown(ok ? 0 : 1);
+                }
+            };
+            t.Start();
+        }
+
         win.Show();
     }
 }

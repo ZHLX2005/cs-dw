@@ -317,6 +317,12 @@ public partial class MainWindow : Window
     /// <summary>托盘是否注册成功</summary>
     public bool TrayAdded => _tray.Added;
 
+    /// <summary>自测：程序化触发一次托盘右键</summary>
+    public void SimulateTrayRightClick() => _tray.SimulateRightClick();
+
+    /// <summary>自测：右键消息是否到达了菜单弹出逻辑</summary>
+    public bool TrayContextMenuShown => _tray.ContextMenuShown;
+
     /// <summary>当前存活子进程总数（自测断言用）</summary>
     public int RunningCount => _procs.Counts.Values.Sum();
 

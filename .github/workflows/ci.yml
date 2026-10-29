@@ -44,6 +44,11 @@ jobs:
         # 边缘唤醒自测：程序化把光标移到屏幕边缘，验证「悬浮唤出」真的生效
         run: dotnet run --project src/NxDrawer.csproj -c Release --no-build -- --edge-test
 
+      - name: Tray right-click test
+        # 托盘右键自测：程序化投递 WM_APP+1，验证右键消息能到达菜单。
+        # v4 下 lParam 的 LOWORD 才是鼠标消息——整体取值会导致右键完全无反应。
+        run: dotnet run --project src/NxDrawer.csproj -c Release --no-build -- --tray-test
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
